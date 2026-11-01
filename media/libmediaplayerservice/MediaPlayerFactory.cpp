@@ -324,12 +324,19 @@ class TestPlayerFactory : public MediaPlayerFactory::IFactory {
     }
 };
 
+#ifdef RK28_OPENCORE_PLAYER
+MediaPlayerFactory::IFactory* createRK28PVFactory();
+#endif
+
 void MediaPlayerFactory::registerBuiltinFactories() {
     Mutex::Autolock lock_(&sLock);
 
     if (sInitComplete)
         return;
 
+#ifdef RK28_OPENCORE_PLAYER
+    registerFactory_l(createRK28PVFactory(), PV_PLAYER);
+#endif
     registerFactory_l(new StagefrightPlayerFactory(), STAGEFRIGHT_PLAYER);
     registerFactory_l(new NuPlayerFactory(), NU_PLAYER);
     registerFactory_l(new SonivoxPlayerFactory(), SONIVOX_PLAYER);

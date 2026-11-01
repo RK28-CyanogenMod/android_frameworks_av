@@ -62,6 +62,11 @@ ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
     endif
 endif
 
+ifeq ($(BOARD_USES_RK28_OPENCORE),true)
+LOCAL_CFLAGS += -DRK28_OPENCORE_PLAYER
+LOCAL_SHARED_LIBRARIES += librk28pvplayer
+endif
+
 LOCAL_MODULE:= libmediaplayerservice
 
 include $(BUILD_SHARED_LIBRARY)
