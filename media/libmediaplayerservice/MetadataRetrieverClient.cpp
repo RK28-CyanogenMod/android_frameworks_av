@@ -83,6 +83,9 @@ static sp<MediaMetadataRetrieverBase> createRetriever(player_type playerType)
 {
     sp<MediaMetadataRetrieverBase> p;
     switch (playerType) {
+#ifdef RK28_OPENCORE_PLAYER
+        case PV_PLAYER:
+#endif
         case STAGEFRIGHT_PLAYER:
         case NU_PLAYER:
         {
