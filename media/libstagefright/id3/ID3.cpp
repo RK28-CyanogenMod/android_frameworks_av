@@ -25,6 +25,7 @@
 #include <media/stagefright/Utils.h>
 #include <utils/String8.h>
 #include <byteswap.h>
+#include <string.h>
 
 namespace android {
 
@@ -521,32 +522,32 @@ void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
         // UTF-16 BE, no byte order mark.
         // API wants number of characters, not number of bytes...
         int len = n / 2;
-        const char16_t *framedata = (const char16_t *) (frameData + 1);
-        char16_t *framedatacopy = NULL;
+        if (len == 0) return;
+        // Copy to an aligned buffer first: casting mFrameData+1 to char16_t*
+        // yields unaligned accesses that raise SIGBUS on ARMv5 (RK2818).
+        char16_t *framedatacopy = new char16_t[len];
+        memcpy(framedatacopy, frameData + 1, len * 2);
 #if BYTE_ORDER == LITTLE_ENDIAN
-        framedatacopy = new char16_t[len];
         for (int i = 0; i < len; i++) {
-            framedatacopy[i] = bswap_16(framedata[i]);
+            framedatacopy[i] = bswap_16(framedatacopy[i]);
         }
-        framedata = framedatacopy;
 #endif
-        id->setTo(framedata, len);
-        if (framedatacopy != NULL) {
-            delete[] framedatacopy;
-        }
+        id->setTo(framedatacopy, len);
+        delete[] framedatacopy;
     } else {
         // UCS-2
         // API wants number of characters, not number of bytes...
         int len = n / 2;
-        const char16_t *framedata = (const char16_t *) (frameData + 1);
-        char16_t *framedatacopy = NULL;
+        if (len == 0) return;
+        // Aligned copy, see the UTF-16 BE branch above.
+        char16_t *framedatacopy = new char16_t[len];
+        memcpy(framedatacopy, frameData + 1, len * 2);
+        char16_t *framedata = framedatacopy;
         if (*framedata == 0xfffe) {
             // endianness marker doesn't match host endianness, convert
-            framedatacopy = new char16_t[len];
             for (int i = 0; i < len; i++) {
-                framedatacopy[i] = bswap_16(framedata[i]);
+                framedatacopy[i] = bswap_16(framedatacopy[i]);
             }
-            framedata = framedatacopy;
         }
         // If the string starts with an endianness marker, skip it
         if (*framedata == 0xfeff) {
@@ -554,9 +555,7 @@ void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
             len--;
         }
         id->setTo(framedata, len);
-        if (framedatacopy != NULL) {
-            delete[] framedatacopy;
-        }
+        delete[] framedatacopy;
     }
 }
 
